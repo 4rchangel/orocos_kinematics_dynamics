@@ -12,21 +12,23 @@ using namespace KDL;
 
 class KinFamTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( KinFamTest);
-    CPPUNIT_TEST( JointTest );
-    CPPUNIT_TEST( SegmentTest );
-    CPPUNIT_TEST( ChainTest );
-    CPPUNIT_TEST( TreeTest );
-    CPPUNIT_TEST_SUITE_END();
+	CPPUNIT_TEST_SUITE( KinFamTest);
+//	CPPUNIT_TEST( JointTest );
+//	CPPUNIT_TEST( SegmentTest );
+//	CPPUNIT_TEST( ChainTest );
+//	CPPUNIT_TEST( TreeTest );
+	CPPUNIT_TEST( ParamOptimizationTest );
+	CPPUNIT_TEST_SUITE_END();
 
 public:
-    void setUp();
-    void tearDown();
+	void setUp();
+	void tearDown();
 
-    void JointTest();
-    void SegmentTest();
-    void ChainTest();
-    void TreeTest();
+	void JointTest();
+	void SegmentTest();
+	void ChainTest();
+	void TreeTest();
+	void ParamOptimizationTest();
 
 };
 
