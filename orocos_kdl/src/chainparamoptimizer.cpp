@@ -152,6 +152,7 @@ namespace KDL
 
 	struct SegmentOptimizationMetadata
 	{
+		int idxOfSegmentInChain;
 		int idxOfFirstParam;
 		int numParams;
 	};
@@ -168,6 +169,7 @@ namespace KDL
 			SegmentOptimizationMetadata segMeta;
 			segMeta.numParams = 4; // at the moment: optimize 4 DH params
 			segMeta.idxOfFirstParam = paramCounter;
+			segMeta.idxOfSegmentInChain = segIdx;
 			paramCounter += segMeta.numParams;
 
 			chainMeta[segIdx] = segMeta;
@@ -228,12 +230,58 @@ namespace KDL
 			throw new std::runtime_error("too few observations: underdetermined system of equations!");
 		}
 
-		optimizedChain = ChainDH(initialChain);
+		auto chainDh = ChainDH(initialChain);
+		auto genericChain = chainDh.getGenericChain();
+		Eigen::MatrixXd H(6, 12+(4*numParams)); // dense feature matrix of the central linear equation system
+
+		const size_t lastSegIdx = genericChain.getNrOfSegments()-1;
+		size_t segIdx = lastSegIdx;
+		size_t pendingJointIdx = genericChain.getNrOfJoints()-1;
+		Frame seg2Tool = Frame();
+		for (size_t obsIdx = numObservations-1; obsIdx>0; --obsIdx) {
+			const auto jointCfg = observations[obsIdx].GetConfiguration();
+			const auto base2ToolObserved = observations[obsIdx].GetToolFrame();
+
+			for (auto meta = segMeta.rbegin(); meta !=segMeta.rend(); ++meta)
+			{
+				const auto segmentDh = chainDh.getSegment(meta->idxOfSegmentInChain);
+
+				for (; segIdx>meta->idxOfSegmentInChain; segIdx--) {
+					const auto seg = chainDh.getSegment(segIdx);
+					if (seg.getJoint().getType()!=Joint::Fixed) {
+						seg2Tool = chainDh.getSegment(segIdx).pose((pendingJointIdx)) * seg2Tool;
+						pendingJointIdx -=1 ;
+					}
+					else {
+						seg2Tool = chainDh.getSegment(segIdx).pose(0.0) * seg2Tool;
+					}
+				}
+
+				Eigen::Matrix<double, 6,4> G = Eigen::Matrix<double, 6,4>::Zero();
+
+				const double theta = segmentDh.GetDHParamTeta();
+				const double d = segmentDh.GetDHParamD();
+
+				const double sinTheta = std::sin(theta);
+				const double cosTheta = std::cos(theta);
+
+				G(0,0) = -sinTheta * d;
+				G(0,1) = cosTheta;
+				G(1,0) = -cosTheta*d;
+				G(1,1) = -sinTheta;
+				G(2,3) = 1.0;
+				G(3,0) = cosTheta;
+				G(4,0) = -sinTheta;
+				G(5,2) = 1.0;
+
+
+			}
+		}
+
 		return optimizedChain;
 	}
 
 	void ChainParamOptimizer::impl::updateInternalDataStructures()
 	{
-ex
 	}
 }

@@ -27,26 +27,26 @@
 namespace KDL {
 
     /**
-     * Implementation of a recursive forward position kinematics
-     * algorithm to calculate the position transformation from joint
-     * space to Cartesian space of a general kinematic chain (KDL::Chain).
-     *
-     * @ingroup KinematicFamily
-     */
+	 * Implementation of a recursive forward position kinematics
+	 * algorithm to calculate the position transformation from joint
+	 * space to Cartesian space of a general kinematic chain (KDL::Chain).
+	 *
+	 * @ingroup KinematicFamily
+	 */
     class ChainFkSolverPos_recursive : public ChainFkSolverPos
-    {
-    public:
-        ChainFkSolverPos_recursive(const Chain& chain);
-        ~ChainFkSolverPos_recursive();
+	{
+	public:
+		ChainFkSolverPos_recursive(const Chain& chain);
+		~ChainFkSolverPos_recursive();
 
-        virtual int JntToCart(const JntArray& q_in, Frame& p_out, int segmentNr=-1);
-        virtual int JntToCart(const JntArray& q_in, std::vector<Frame>& p_out, int segmentNr=-1);
+		virtual int JntToCart(const JntArray& q_in, Frame& p_out, int segmentNr=-1);
+		virtual int JntToCart(const JntArray& q_in, std::vector<Frame>& p_out, int segmentNr=-1);
 
-        virtual void updateInternalDataStructures() {};
+		virtual void updateInternalDataStructures() {};
 
-    private:
-        const Chain& chain;
-    };
+	private:
+		const Chain& chain;
+	};
 
 }
 
