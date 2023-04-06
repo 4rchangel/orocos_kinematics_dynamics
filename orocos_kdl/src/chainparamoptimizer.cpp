@@ -1,4 +1,5 @@
 #include <exception>
+#include <stdexcept>
 #include <map>
 #include <cassert>
 #include "chainparamoptimizer.hpp"
@@ -7,7 +8,17 @@
 
 namespace KDL
 {
-    static const Joint& dhCompatibleJointOrError(const Joint& joint)
+	void copyToBlock(Eigen::MatrixXd dstMat, const int startRow, const int startCol, const Rotation& rotation)
+	{
+		const int rowLimit = startRow+3;
+		const int colLimit = startCol+3;
+		for (int r=startRow;r<rowLimit;++r)
+			for (int c=startCol;c<colLimit;++c) {
+				dstMat(r,c) = rotation(r,c);
+			}			
+	}
+
+    const Joint& dhCompatibleJointOrError(const Joint& joint)
 	{
 		switch (joint.getType()) {
 		    case Joint::RotZ:
@@ -162,7 +173,7 @@ namespace KDL
 		const int nrOfSegments = chain.getNrOfSegments();
 		std::vector<SegmentOptimizationMetadata> chainMeta(nrOfSegments);
 
-		size_t paramCounter = 0;
+		int paramCounter = 0;
 		for (int segIdx = 0; segIdx < nrOfSegments; ++segIdx) {
 			auto seg = chain.getSegment(segIdx);
 
@@ -249,7 +260,7 @@ namespace KDL
 				for (; segIdx>meta->idxOfSegmentInChain; segIdx--) {
 					const auto seg = chainDh.getSegment(segIdx);
 					if (seg.getJoint().getType()!=Joint::Fixed) {
-						seg2Tool = chainDh.getSegment(segIdx).pose((pendingJointIdx)) * seg2Tool;
+						seg2Tool = chainDh.getSegment(segIdx).pose(jointCfg(pendingJointIdx)) * seg2Tool;
 						pendingJointIdx -=1 ;
 					}
 					else {
@@ -259,9 +270,8 @@ namespace KDL
 
 				Eigen::Matrix<double, 6,4> G = Eigen::Matrix<double, 6,4>::Zero();
 
-				const double theta = segmentDh.GetDHParamTeta();
 				const double d = segmentDh.GetDHParamD();
-
+				const double theta = segmentDh.GetDHParamTeta();
 				const double sinTheta = std::sin(theta);
 				const double cosTheta = std::cos(theta);
 
@@ -274,7 +284,19 @@ namespace KDL
 				G(4,0) = -sinTheta;
 				G(5,2) = 1.0;
 
+				auto seg2ToolRot = seg2Tool.M;
+				Eigen::Matrix3d rotMat;
+				copyToBlock(rotMat, 0,0, seg2Tool.M);
 
+				
+				Eigen::Matrix<double, 6,6> J; //error propagation matrix
+				J(Eigen::seq(0,2), Eigen::seq(0,2)) = rotMat;
+				J(Eigen::seq(0,2), Eigen::seq(3,5)) = rotMat;
+				J(Eigen::seq(3,5), Eigen::seq(3,5)) = rotMat;
+				//copyToBlock(J, 0,0, seg2ToolRot);
+				//copyToBlock(J, 3,3, seg2ToolRot);
+
+                //H(Eigen::seq(0, 5), Eigen::seq(meta->idxOfFirstParam, meta->numParams)) = J * G;
 			}
 		}
 
@@ -284,4 +306,6 @@ namespace KDL
 	void ChainParamOptimizer::impl::updateInternalDataStructures()
 	{
 	}
+
+
 }
